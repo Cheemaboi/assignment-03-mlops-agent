@@ -1,0 +1,8 @@
+stages:
+  train:
+    cmd: python training/train.py
+    deps:
+      - training/train.py
+      - data/demo_state.json
+    outs:
+      - data/latest_metrics.json

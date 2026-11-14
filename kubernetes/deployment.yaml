@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churn-inference
+  namespace: mlops-demo
+  labels:
+    app: churn-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: churn-inference
+  template:
+    metadata:
+      labels:
+        app: churn-inference
+    spec:
+      containers:
+        - name: api
+          image: mlops-agent:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: mlops-agent-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20

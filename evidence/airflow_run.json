@@ -1,0 +1,1 @@
+{"tool":"airflow.dag_runs","dag_id":"ml_training_pipeline","run_id":"manual__2026-11-07T10:15:00+00:00","state":"success","quality_gate":"success"}

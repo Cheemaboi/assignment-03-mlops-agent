@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-agent-config
+  namespace: mlops-demo
+data:
+  DEMO_MODE: "true"
+  APPROVED_NAMESPACE: "mlops-demo"
+  MLFLOW_TRACKING_URI: "http://mlflow.mlops-demo.svc.cluster.local:5000"

@@ -1,0 +1,1 @@
+{"tool":"kubernetes.deployment_status","namespace":"mlops-demo","deployment":"churn-inference","desired_replicas":2,"ready_replicas":2,"service_type":"ClusterIP"}

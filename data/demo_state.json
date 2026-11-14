@@ -1,0 +1,30 @@
+{
+  "dvc": {
+    "dataset": "customer_churn",
+    "data_path": "data/raw/customer_churn.csv",
+    "dataset_version": "v2.1",
+    "git_commit": "a4c92e1",
+    "dvc_remote": "local-demo-remote",
+    "changed": false,
+    "revisions": {"v2.0": "9c4d2f0", "v2.1": "a4c92e1"}
+  },
+  "mlflow": {
+    "experiment": "churn-classifier",
+    "runs": [
+      {"run_id": "run-025", "name": "baseline-logreg", "f1": 0.842, "accuracy": 0.861, "dataset_version": "v2.0", "status": "FINISHED"},
+      {"run_id": "run-026", "name": "random-forest", "f1": 0.887, "accuracy": 0.894, "dataset_version": "v2.1", "status": "FINISHED"},
+      {"run_id": "run-027", "name": "xgboost-tuned", "f1": 0.901, "accuracy": 0.899, "dataset_version": "v2.1", "status": "FINISHED"}
+    ],
+    "registry": {"model_name": "churn-classifier", "version": "3", "stage": "Staging", "run_id": "run-027"}
+  },
+  "airflow": {
+    "dags": ["ml_training_pipeline"],
+    "runs": [{"dag_id": "ml_training_pipeline", "run_id": "manual__2026-11-07T10:15:00+00:00", "state": "success", "logical_date": "2026-11-07T10:15:00+00:00", "tasks": [{"task_id": "validate_data", "state": "success"}, {"task_id": "preprocess", "state": "success"}, {"task_id": "train_model", "state": "success"}, {"task_id": "evaluate_and_log_mlflow", "state": "success"}, {"task_id": "quality_gate", "state": "success"}]}]
+  },
+  "kubernetes": {
+    "namespace": "mlops-demo",
+    "deployment": {"name": "churn-inference", "image": "mlops-agent:0.1.0", "desired_replicas": 2, "ready_replicas": 2},
+    "pods": [{"name": "churn-inference-6cd9b8d94-pf7xj", "phase": "Running", "ready": true, "restarts": 0}, {"name": "churn-inference-6cd9b8d94-wq3ms", "phase": "Running", "ready": true, "restarts": 0}],
+    "service": {"name": "churn-inference", "type": "ClusterIP", "port": 80, "target_port": 8000}
+  }
+}
