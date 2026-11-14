@@ -1,8 +1,8 @@
 stages:
   train:
-    cmd: python training/train.py
+    cmd: python training/train.py --model logistic_regression --dataset-version v1.0
     deps:
       - training/train.py
-      - data/demo_state.json
+      - data/raw/customer_churn.csv
     outs:
       - data/latest_metrics.json

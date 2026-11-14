@@ -13,10 +13,32 @@ from agent.tools.common import demo_mode, load_demo_state, result
 class AirflowTools:
     approved_dags = {"ml_training_pipeline"}
 
+    def _headers(self) -> dict[str, str]:
+        """Use a supplied JWT or obtain a short-lived token from Airflow 3."""
+        token = os.getenv("AIRFLOW_TOKEN")
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+        username = os.getenv("AIRFLOW_USERNAME")
+        password = os.getenv("AIRFLOW_PASSWORD")
+        if not username or not password:
+            raise RuntimeError(
+                "Set AIRFLOW_TOKEN or both AIRFLOW_USERNAME and AIRFLOW_PASSWORD for live mode."
+            )
+        base = os.getenv("AIRFLOW_BASE_URL", "http://localhost:8080").rstrip("/")
+        response = requests.post(
+            f"{base}/auth/token",
+            json={"username": username, "password": password},
+            timeout=10,
+        )
+        response.raise_for_status()
+        access_token = response.json().get("access_token")
+        if not access_token:
+            raise RuntimeError("Airflow did not return an access token")
+        return {"Authorization": f"Bearer {access_token}"}
+
     def _request(self, method: str, path: str, payload: dict | None = None) -> dict:
         base = os.getenv("AIRFLOW_BASE_URL", "http://localhost:8080").rstrip("/")
-        token = os.getenv("AIRFLOW_TOKEN")
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        headers = self._headers()
         response = requests.request(method, f"{base}/api/v2{path}", headers=headers, json=payload, timeout=10)
         response.raise_for_status()
         return response.json()

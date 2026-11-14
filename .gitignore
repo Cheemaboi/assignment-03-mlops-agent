@@ -9,4 +9,6 @@ mlruns/
 *.log
 report/qa/
 report/qa_pdf/
+tools/
+tmp/
 
