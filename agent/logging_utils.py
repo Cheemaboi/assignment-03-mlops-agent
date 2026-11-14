@@ -6,7 +6,6 @@ import json
 import logging
 from typing import Any
 
-
 logger = logging.getLogger("mlops_agent")
 if not logger.handlers:
     handler = logging.StreamHandler()

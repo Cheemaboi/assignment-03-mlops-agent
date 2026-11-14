@@ -13,7 +13,6 @@ from uuid import uuid4
 from agent.logging_utils import log_tool
 from agent.schemas import ToolResult
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
