@@ -1,0 +1,29 @@
+{
+  "scope": "Live local verification, not the offline test fixture",
+  "dataset": {
+    "name": "customer_churn",
+    "version": "v1.0",
+    "dvc_pointer": "data/raw/customer_churn.csv.dvc",
+    "dvc_status_json": {}
+  },
+  "mlflow": {
+    "experiment": "churn-classifier",
+    "best_model": "logistic_regression",
+    "f1": 0.9787,
+    "accuracy": 0.9833
+  },
+  "airflow": {
+    "dag_id": "ml_training_pipeline",
+    "run_id": "manual__2026-11-14T22:52:44.199604+00:00",
+    "state": "success",
+    "tasks": ["validate_data", "preprocess", "train_model", "evaluate_and_log_mlflow", "quality_gate"]
+  },
+  "kubernetes": {
+    "namespace": "mlops-demo",
+    "deployment": "churn-inference",
+    "ready_replicas": 2,
+    "desired_replicas": 2,
+    "service_type": "ClusterIP",
+    "service_port": 80
+  }
+}

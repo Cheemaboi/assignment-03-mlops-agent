@@ -1,62 +1,52 @@
-# Technical Report - MLOps AI Agent
+# Technical Report — MLOps AI Agent
 
-## 1. Introduction
+## 1. What I built
 
-For this assignment, I built a small MLOps agent that brings together four tasks that are usually checked separately: finding the data version, checking MLflow experiments, looking at the Airflow pipeline, and checking whether the prediction API is healthy on Kubernetes. I wanted the agent to be useful without pretending it knows more than the tools tell it. That is why every operational statement in its answer comes from a tool result and the response also includes the evidence source.
+For this assignment, I built a small MLOps assistant around four real operations: DVC data provenance, MLflow experiment tracking, an Airflow training workflow, and Kubernetes application checks. I kept the agent deterministic on purpose. It routes a request to approved tools instead of relying on an LLM to invent an answer, so every operational statement can be traced back to a tool response.
 
-I made the project work in two modes. The normal submission mode is an offline demo mode with recorded responses in `data/demo_state.json`. This keeps the tests reproducible. The same modules have live adapters for a DVC repository, an MLflow tracking server, the Airflow 3 API, and the Kubernetes Python client.
+There is no OpenAI dependency or API key in this project. The offline fixture mode supports repeatable tests, while the same adapters can be switched to local live services with `DEMO_MODE=false`.
 
-## 2. System design
+## 2. Design
 
-The user can ask the agent through the command line or the FastAPI `/ask` endpoint. The orchestrator reads the request and calls only the tools needed for it. Each tool returns a `ToolResult` containing its name, success state, evidence, duration, request id, data, and error if there was one. This makes it possible to show what was checked and to avoid hiding failures.
+The command-line program and FastAPI `/ask` endpoint call the same orchestrator. Each tool returns a `ToolResult` containing its name, success state, data, evidence source, duration, and an error when something goes wrong. This made it possible to return partial results honestly instead of filling in a missing fact.
 
-The four integrations are DVC for data versions, MLflow for runs and model registry details, Airflow for training workflow operations, and Kubernetes for application diagnosis. The live MLflow adapter uses `MlflowClient`, not the web UI. The live Airflow adapter uses the Airflow 3 REST API, and the Kubernetes adapter uses the official Python client.
+The DVC adapter uses fixed DVC and Git commands. The MLflow adapter uses `MlflowClient`, not browser scraping. The Airflow adapter exchanges local credentials for a short-lived bearer token and calls the Airflow 3 REST API. The Kubernetes adapter uses the official Python client and is scoped to the approved `mlops-demo` namespace.
 
-The training DAG is `validate_data -> preprocess -> train_model -> evaluate_and_log_mlflow -> quality_gate`. The tasks have retries and the quality gate raises an error when F1 is below 0.85. This is important because training should not silently become promotion.
+The workflow is `validate_data -> preprocess -> train_model -> evaluate_and_log_mlflow -> quality_gate`. Validation checks the CSV schema and class labels. Training logs its parameters, metrics, source-data label, and Git revision to MLflow. The final gate raises an error below F1 0.85, so training does not silently become promotion.
 
-## 3. Permissions and safety decisions
+## 3. Safety choices
 
-The project does not execute a command copied from a user question. DVC operations use fixed argument lists. Airflow triggers are limited to `ml_training_pipeline`, and Kubernetes reads use the configured `mlops-demo` namespace. Both an Airflow trigger and a Kubernetes restart need `confirmed=true` in a separate request field. Secrets stay in environment variables and the structured log helper removes values whose key suggests a token or secret.
+The project never executes a command copied from a question. Airflow can only trigger `ml_training_pipeline`; Kubernetes restart and Airflow trigger requests need `confirmed=true`; and the structured logger removes values whose key looks like a token or secret. The agent recommends review before promotion and does not start retraining merely because a user asks it to.
 
-The agent also treats uncertainty as a real result. If MLflow times out, it says the best-model check is unavailable. It does not create a fallback answer from old language-model knowledge. Similarly, it does not recommend retraining merely because a user asks the question; there needs to be a clear freshness-policy breach, failed quality gate, or degradation result.
+## 4. Live local evidence
 
-## 4. Exported demonstration evidence
+I ran the local services with Docker Desktop, a kind Kubernetes cluster, and the DVC repository in this project. The exported result is stored in `evidence/live_local_run.json`.
 
-The following evidence was exported by the project in demo mode. The files are included in the `evidence` folder so the values can be checked without reading the report.
-
-| Area | Result recorded by the tool | What it shows |
+| Area | Live result | What it shows |
 | --- | --- | --- |
-| DVC | `customer_churn`, version `v2.1`, Git `a4c92e1` | A training-data reference is present and reproducible. |
-| MLflow | `run-027` (`xgboost-tuned`), F1 `0.901` | This is the strongest F1 candidate among the recorded finished runs. |
-| Airflow | `ml_training_pipeline`, latest run `success` | All five pipeline stages completed in the demo record. |
-| Kubernetes | `churn-inference`, 2/2 ready replicas | The Deployment is healthy and exposed by a ClusterIP Service. |
+| DVC | `customer_churn`, version `v1.0`; clean `dvc status --json` | The synthetic CSV is DVC-tracked and the training stage is reproducible. |
+| MLflow | logistic regression, F1 `0.9787`, accuracy `0.9833` | The best completed run was selected through `MlflowClient`. |
+| Airflow | `manual__2026-11-14T22:52:44.199604+00:00`, `success` | Validation, preprocessing, training, MLflow logging, and the quality gate all completed. |
+| Kubernetes | `churn-inference`, `2/2` ready | The inference service was running behind a ClusterIP Service. |
 
-The model is still in the Staging registry stage. That is deliberate: F1 is useful for selecting a candidate, but it is not enough by itself to approve a production model.
+The earlier JSON files in `evidence/` are offline fixtures for tests. They are not used as proof of the local run above.
 
-## 5. Five agent conversations tested
+## 5. Five checks I tried
 
-1. **Which dataset version was used?** The DVC tool returned `v2.1` and commit `a4c92e1`. It also provides the reproduction command `git checkout a4c92e1 && dvc pull`.
-2. **Compare the last runs and select a candidate.** MLflow returned three completed demo runs. `run-027` had F1 0.901, higher than 0.887 and 0.842. The agent recommends reviewing validation, fairness, latency, and approval checks before promotion.
-3. **What happened in the training pipeline?** Airflow returned the most recent run as `success`, with validation, preprocessing, training, MLflow logging, and the quality gate all successful.
-4. **Is the prediction API available?** Kubernetes returned 2 of 2 ready replicas for `churn-inference` and a ClusterIP Service forwarding port 80 to 8000. The demo Pod log also showed a successful `/healthz` response.
-5. **Find the best model, data version, deployment status, and whether retraining is needed.** The agent used MLflow, DVC, Kubernetes, and Airflow in one response. It identified `run-027`, the `v2.1` data version, a healthy deployment, and a successful pipeline. It did not trigger retraining because no degradation, policy failure, or failed quality gate was present.
+1. **Which dataset version was used?** The DVC tool returned `v1.0`, the pointer file `data/raw/customer_churn.csv.dvc`, and the current Git revision. It also gives the reproduction command for the version label.
+2. **Which run is strongest?** MLflow selected the logistic-regression run with F1 0.9787. The answer still recommends validation, fairness, latency, and approval checks before production promotion.
+3. **Did the pipeline finish?** Airflow returned a successful manual run with all five task instances in `success`.
+4. **Is the prediction API available?** The Kubernetes tool returned two ready replicas for `churn-inference`; the ClusterIP Service exposes port 80 to the application port.
+5. **What is the overall MLOps status?** In one request the agent used MLflow, DVC, Kubernetes, and Airflow. It found a healthy deployment and successful pipeline, but correctly did not recommend automatic retraining because there was no degradation or policy failure.
 
-## 6. Failure investigations
+## 6. Two failures and how I resolved them
 
-### Case 1 - A training request without confirmation
+The first live Airflow attempt could not find the DVC-materialized CSV because the container had been started before the data file was restored. I recreated only the Airflow container after DVC materialization and verified that `/opt/airflow/data/raw/customer_churn.csv` was present. The next run passed validation.
 
-I tried to trigger the Airflow DAG without setting `confirmed=true`. The tool rejected the request and returned a message saying that the action changes workflow state. The cause was not an Airflow outage; it was the intentional safety check. The resolution is to show the request to the user and only resend it with explicit confirmation.
+The second issue was MLflow's host-header allow-list. Local clients used `localhost:5000` and the Airflow container used `mlflow:5000`; both include a port. I added those exact local hosts to the Compose configuration, recreated MLflow, and verified a training run through both paths. A separate parsing issue then appeared because MLflow prints a run URL before the JSON summary. The DAG now reads the final non-empty output line, which is the script's structured summary.
 
-### Case 2 - MLflow information unavailable
+The automated tests also cover an unconfirmed Airflow trigger, a non-allowlisted DAG, an unconfirmed Kubernetes restart, an unknown Pod, an invalid dataset, an invalid metric, and an unavailable MLflow response. In each case the agent reports the failure rather than inventing a success.
 
-I mocked a timeout from the MLflow best-run tool. The agent kept the deployment and Airflow facts that were available, but placed the MLflow timeout under uncertainties and did not claim there was a best model. The root cause would need to be investigated as an MLflow service/network issue in a live setup. The immediate resolution is to check the tracking URI, token, server health, and network connection, then repeat the request.
+## 7. Testing and limits
 
-I also tested an unconfirmed Kubernetes restart and an unknown Pod. Both are rejected without returning invented output. These checks are covered by the automated tests.
-
-## 7. Testing and CI
-
-The repository has 15 pytest tests and a GitHub Actions workflow that runs Ruff and pytest on pushes and pull requests. The tests mock unavailable external services through demo data and cover normal responses, invalid requests, authorization checks, and an unavailable-tool case. This is useful because a normal CI runner should not need access to a university cluster or personal credentials.
-
-## 8. Limitations and next steps
-
-The main limitation is that the included evidence is a reproducible local demo, not a permanently running cluster. For a production version I would add RBAC service accounts, an Airflow token with a limited role, real MLflow artifact storage, monitoring for latency/data drift, and a policy file for retraining thresholds. I would also replace the simple keyword router with an LLM tool-calling layer that is restricted to the same schemas and permissions. The safety layer should remain outside the model so that an unusual prompt cannot bypass it.
+The GitHub Actions workflow runs Ruff and pytest. The local stack is meant for a coursework demonstration, not a production deployment: Airflow Standalone is local-only, the DVC remote is a local folder, and MLflow uses SQLite. A production version would use role-based service accounts, managed artifact storage, monitoring for latency and drift, and a separate policy for retraining decisions.
