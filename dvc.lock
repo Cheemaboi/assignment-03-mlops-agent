@@ -1,0 +1,19 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python training/train.py --model logistic_regression --dataset-version 
+      v1.0
+    deps:
+    - path: data/raw/customer_churn.csv
+      hash: md5
+      md5: 96cff345dcc9e05c604ffba0386bd744
+      size: 6054
+    - path: training/train.py
+      hash: md5
+      md5: ff1a7a5a69ecdd3f7dd95ae714eaa2a8
+      size: 3262
+    outs:
+    - path: data/latest_metrics.json
+      hash: md5
+      md5: a1df00eb5f8fbe6392b88202b6b5350f
+      size: 73

@@ -35,7 +35,22 @@ class MLflowTools:
             if experiment is None:
                 raise RuntimeError("Experiment 'churn-classifier' was not found")
             runs = client.search_runs([experiment.experiment_id], max_results=limit, order_by=["attributes.start_time DESC"])
-            return {"runs": [{"run_id": r.info.run_id, "status": r.info.status, "metrics": r.data.metrics, "params": r.data.params} for r in runs]}, ["MlflowClient.search_runs"]
+            formatted = []
+            for run in runs:
+                metrics = run.data.metrics
+                formatted.append(
+                    {
+                        "run_id": run.info.run_id,
+                        "name": run.data.tags.get("mlflow.runName", run.info.run_id),
+                        "status": run.info.status,
+                        "f1": metrics.get("f1"),
+                        "accuracy": metrics.get("accuracy"),
+                        "dataset_version": run.data.tags.get("dataset_version"),
+                        "metrics": metrics,
+                        "params": run.data.params,
+                    }
+                )
+            return {"runs": formatted}, ["MlflowClient.search_runs"]
 
         return result("mlflow.list_runs", action)
 

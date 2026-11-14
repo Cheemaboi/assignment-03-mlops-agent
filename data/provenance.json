@@ -1,0 +1,10 @@
+{
+  "dataset": "customer_churn",
+  "dataset_version": "v1.0",
+  "data_path": "data/raw/customer_churn.csv",
+  "dvc_pointer": "data/raw/customer_churn.csv.dvc",
+  "versions": {
+    "v1.0": "dataset-v1.0"
+  },
+  "notes": "Synthetic churn records generated with seed 4016 for the assignment. The CSV contents are tracked by DVC; this file records the human-readable version label used by the training run."
+}

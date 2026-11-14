@@ -43,7 +43,8 @@ class KubernetesTools:
             item = apps.read_namespaced_deployment_status(name, self.namespace)
             desired = item.spec.replicas or 0
             ready = item.status.ready_replicas or 0
-            return {"name": name, "desired_replicas": desired, "ready_replicas": ready, "healthy": ready >= desired}, ["Kubernetes AppsV1Api.read_namespaced_deployment_status"]
+            deployment = {"name": name, "desired_replicas": desired, "ready_replicas": ready}
+            return {"deployment": deployment, "healthy": ready >= desired, "namespace": self.namespace}, ["Kubernetes AppsV1Api.read_namespaced_deployment_status"]
 
         return result("kubernetes.deployment_status", action)
 

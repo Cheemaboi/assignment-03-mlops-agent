@@ -24,16 +24,21 @@ def main() -> None:
             charge = round(random.uniform(20, 120), 2)
             tickets = random.randint(0, 6)
             contract = random.choice(["month_to_month", "one_year", "two_year"])
-            risk = (0.45 if contract == "month_to_month" else 0.16) + tickets * 0.07
-            risk += 0.18 if tenure < 10 else 0
-            risk += 0.1 if charge > 95 else 0
+            # This is deliberately deterministic rather than a realistic customer
+            # simulator.  It gives the coursework pipeline a learnable relationship
+            # that is easy to inspect: flexible contracts, more support tickets,
+            # short tenure, and higher charges all increase churn risk.
+            risk_score = 2.6 if contract == "month_to_month" else (-0.4 if contract == "one_year" else -1.1)
+            risk_score += tickets * 0.82
+            risk_score -= tenure * 0.055
+            risk_score += (charge - 60) * 0.018
             writer.writerow(
                 {
                     "tenure_months": tenure,
                     "monthly_charge": charge,
                     "support_tickets": tickets,
                     "contract": contract,
-                    "churn": int(random.random() < min(risk, 0.9)),
+                    "churn": int(risk_score > 1.35),
                 }
             )
 

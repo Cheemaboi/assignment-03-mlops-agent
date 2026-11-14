@@ -77,8 +77,9 @@ def main() -> None:
             }
         )
         summary = {**metrics, "run_id": run.info.run_id, "dataset_version": args.dataset_version}
+        reproducible_metrics = {**metrics, "dataset_version": args.dataset_version}
         artifact = ROOT / "data" / "latest_metrics.json"
-        artifact.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        artifact.write_text(json.dumps(reproducible_metrics, indent=2), encoding="utf-8")
         mlflow.log_artifact(str(artifact), artifact_path="metrics")
     print(json.dumps(summary))
 

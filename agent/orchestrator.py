@@ -67,7 +67,8 @@ class MLOpsAgent:
             elif item.tool == "airflow.dag_runs":
                 runs = item.data["runs"]
                 if runs:
-                    facts.append(f"The latest recorded Airflow run is {runs[-1]['state']} ({runs[-1]['run_id']}).")
+                    latest = item.data.get("latest_run") or runs[-1]
+                    facts.append(f"The latest recorded Airflow run is {latest['state']} ({latest['run_id']}).")
             elif item.tool == "mlflow.list_runs":
                 facts.append(f"MLflow returned {len(item.data['runs'])} recorded run(s).")
             elif item.tool == "airflow.trigger_training":

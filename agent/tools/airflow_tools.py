@@ -56,7 +56,12 @@ class AirflowTools:
             if demo_mode():
                 runs = [r for r in load_demo_state()["airflow"]["runs"] if r["dag_id"] == dag_id]
                 return {"dag_id": dag_id, "runs": runs}, ["data/demo_state.json:airflow.runs"]
-            return self._request("GET", f"/dags/{dag_id}/dagRuns"), ["Airflow REST GET dagRuns"]
+            payload = self._request("GET", f"/dags/{dag_id}/dagRuns")
+            runs = []
+            for run in payload.get("dag_runs", []):
+                runs.append({**run, "run_id": run.get("dag_run_id", run.get("run_id"))})
+            runs.sort(key=lambda run: run.get("logical_date", ""), reverse=True)
+            return {"dag_id": dag_id, "runs": runs, "latest_run": runs[0] if runs else None}, ["Airflow REST GET dagRuns"]
 
         return result("airflow.dag_runs", action)
 
@@ -86,6 +91,7 @@ class AirflowTools:
                 return {"dag_id": dag_id, "run_id": run_id, "state": "queued", "mode": "demo"}, [
                     "approval confirmed", "data/demo_state.json:airflow"
                 ]
-            return self._request("POST", f"/dags/{dag_id}/dagRuns", {"logical_date": datetime.now(UTC).isoformat()}), ["Airflow REST POST dagRuns", "approval confirmed"]
+            payload = self._request("POST", f"/dags/{dag_id}/dagRuns", {"logical_date": datetime.now(UTC).isoformat()})
+            return {**payload, "run_id": payload.get("dag_run_id", payload.get("run_id"))}, ["Airflow REST POST dagRuns", "approval confirmed"]
 
         return result("airflow.trigger_training", action)

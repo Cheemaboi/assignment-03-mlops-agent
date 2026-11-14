@@ -9,6 +9,9 @@ mlruns/
 *.log
 report/qa/
 report/qa_pdf/
+report/qa_pdf_final/
+report/qa_docx_final/
 tools/
 tmp/
+.dvc-storage/
 
