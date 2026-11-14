@@ -1,0 +1,32 @@
+[
+  {
+    "question": "Which dataset version was used?",
+    "tools_used": ["dvc.get_dataset_version"],
+    "answer": "The recorded dataset is v2.1 at Git commit a4c92e1.",
+    "evidence": ["data/demo_state.json:dvc", "git commit a4c92e1"]
+  },
+  {
+    "question": "Compare the last five training runs and recommend the best candidate based on F1 score.",
+    "tools_used": ["mlflow.best_run"],
+    "answer": "run-027 (xgboost-tuned) is the highest recorded F1 candidate at 0.901.",
+    "evidence": ["data/demo_state.json:mlflow.runs"]
+  },
+  {
+    "question": "What happened in the training pipeline?",
+    "tools_used": ["airflow.dag_runs"],
+    "answer": "The latest recorded run is success and its validation, preprocessing, training, MLflow logging, and quality-gate tasks all succeeded.",
+    "evidence": ["data/demo_state.json:airflow.runs"]
+  },
+  {
+    "question": "Is the prediction API available?",
+    "tools_used": ["kubernetes.deployment_status", "kubernetes.service_status"],
+    "answer": "churn-inference has 2/2 ready replicas and is exposed through the recorded ClusterIP Service.",
+    "evidence": ["data/demo_state.json:kubernetes.deployment", "data/demo_state.json:kubernetes.service"]
+  },
+  {
+    "question": "Find the best recent model, identify the dataset version, check deployment status, and explain whether retraining is necessary.",
+    "tools_used": ["mlflow.best_run", "dvc.get_dataset_version", "kubernetes.deployment_status", "airflow.dag_runs"],
+    "answer": "run-027 has F1 0.901; it used v2.1 at Git a4c92e1; churn-inference is 2/2 ready; the latest pipeline succeeded. Retraining is not started because no degradation, freshness-policy breach, or failed quality gate is recorded.",
+    "evidence": ["data/demo_state.json:mlflow.runs", "data/demo_state.json:dvc", "data/demo_state.json:kubernetes.deployment", "data/demo_state.json:airflow.runs"]
+  }
+]
