@@ -1,5 +1,7 @@
 # MLOps AI Agent
 
+**Submitted by:** Hamza Farooq | **Roll number:** 22i-0912 | **Section:** MLOps B
+
 This is my Assignment 03 project for MLOps and Production AI Engineering. It is a small, deterministic assistant for the checks I would normally make separately: which data version was used, which MLflow run is strongest, whether the Airflow training pipeline passed, and whether the deployed API is healthy.
 
 The agent does not use an OpenAI model or an API key. A simple keyword router selects from four approved tools. This makes the behaviour easy to test and stops a chat message from becoming an unrestricted shell command.
