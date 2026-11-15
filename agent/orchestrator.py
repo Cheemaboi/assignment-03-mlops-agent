@@ -37,7 +37,9 @@ class MLOpsAgent:
         else:
             if any(word in text for word in ("dataset", "dvc", "provenance", "version")):
                 results.append(self.dvc.get_dataset_version())
-            if any(word in text for word in ("experiment", "mlflow", "metric", "run")):
+            if "compare" in text and any(word in text for word in ("experiment", "mlflow", "metric", "run")):
+                results.append(self.mlflow.compare_runs())
+            elif any(word in text for word in ("experiment", "mlflow", "metric", "run")):
                 results.append(self.mlflow.list_runs())
             if any(word in text for word in ("airflow", "dag", "pipeline", "trigger")):
                 results.append(self.airflow.trigger_training("ml_training_pipeline", confirmed) if "trigger" in text else self.airflow.dag_runs())
@@ -71,6 +73,10 @@ class MLOpsAgent:
                     facts.append(f"The latest recorded Airflow run is {latest['state']} ({latest['run_id']}).")
             elif item.tool == "mlflow.list_runs":
                 facts.append(f"MLflow returned {len(item.data['runs'])} recorded run(s).")
+            elif item.tool == "mlflow.compare_runs":
+                run = item.data["recommended_run"]
+                facts.append(f"MLflow compared {len(item.data['runs'])} completed runs and selected {run['run_id']} with F1 {run['f1']:.3f}.")
+                actions.append("Review validation, fairness, latency, and approval criteria before production promotion.")
             elif item.tool == "airflow.trigger_training":
                 facts.append(f"The approved training DAG was accepted with run id {item.data['run_id']}.")
         uncertainties = [f"{item.tool} was unavailable: {item.error}" for item in failed]

@@ -1,0 +1,16 @@
+[
+  {
+    "scenario": "Invalid DVC dataset request",
+    "operation": "dvc.get_dataset_version('not-tracked')",
+    "result": "rejected",
+    "root_cause": "The requested dataset is absent from the allowlisted provenance record.",
+    "resolution": "Use the recorded customer_churn dataset label or add provenance before querying it."
+  },
+  {
+    "scenario": "Unconfirmed state-changing requests",
+    "operation": "airflow.trigger_training(..., confirmed=false) and kubernetes.restart_deployment(..., confirmed=false)",
+    "result": "rejected",
+    "root_cause": "The requests lacked the explicit confirmation required for workflow and cluster mutations.",
+    "resolution": "Present the action to the operator and repeat only with confirmed=true."
+  }
+]

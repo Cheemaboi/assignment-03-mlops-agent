@@ -98,7 +98,7 @@ The live local verification produced:
 - A successful Airflow run where all five tasks completed.
 - Kubernetes `churn-inference` at `2/2` ready replicas behind a ClusterIP Service.
 
-The full exported summary is in `evidence/live_local_run.json`. The older files in `evidence/` are clearly labelled offline fixture evidence used by unit tests; they are not presented as live output.
+The full exported summary is in `evidence/live_local_run.json`. Five live conversation records are in `evidence/live_agent_conversations.json`, and deliberately rejected safety/invalid-input cases are in `evidence/injected_failures.json`. The older files in `evidence/` are clearly labelled offline fixture evidence used by unit tests; they are not presented as live output.
 
 ## Project layout
 

@@ -20,7 +20,7 @@ The project never executes a command copied from a question. Airflow can only tr
 
 ## 4. Live local evidence
 
-I ran the local services with Docker Desktop, a kind Kubernetes cluster, and the DVC repository in this project. The exported result is stored in `evidence/live_local_run.json`.
+I ran the local services with Docker Desktop, a kind Kubernetes cluster, and the DVC repository in this project. The exported result is stored in `evidence/live_local_run.json`. Five separate live conversation records are in `evidence/live_agent_conversations.json`; these are not the offline fixture records.
 
 | Area | Live result | What it shows |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ I ran the local services with Docker Desktop, a kind Kubernetes cluster, and the
 | Airflow | `manual__2026-11-14T22:52:44.199604+00:00`, `success` | Validation, preprocessing, training, MLflow logging, and the quality gate all completed. |
 | Kubernetes | `churn-inference`, `2/2` ready | The inference service was running behind a ClusterIP Service. |
 
-The earlier JSON files in `evidence/` are offline fixtures for tests. They are not used as proof of the local run above.
+The Kubernetes diagnostic tool also returns the deployed container image (`mlops-agent:0.1.0`) and namespace-scoped Pod events. The queried running Pod had no warning events. The earlier JSON files in `evidence/` are offline fixtures for tests and are not used as proof of the local run above.
 
 ## 5. Five checks I tried
 
@@ -45,7 +45,7 @@ The first live Airflow attempt could not find the DVC-materialized CSV because t
 
 The second issue was MLflow's host-header allow-list. Local clients used `localhost:5000` and the Airflow container used `mlflow:5000`; both include a port. I added those exact local hosts to the Compose configuration, recreated MLflow, and verified a training run through both paths. A separate parsing issue then appeared because MLflow prints a run URL before the JSON summary. The DAG now reads the final non-empty output line, which is the script's structured summary.
 
-The automated tests also cover an unconfirmed Airflow trigger, a non-allowlisted DAG, an unconfirmed Kubernetes restart, an unknown Pod, an invalid dataset, an invalid metric, and an unavailable MLflow response. In each case the agent reports the failure rather than inventing a success.
+I deliberately injected an invalid DVC dataset request and unconfirmed Airflow/Kubernetes mutation requests. All were rejected with specific errors; the full records, root causes, and resolutions are in `evidence/injected_failures.json`. The automated tests also cover a non-allowlisted DAG, an unknown Pod, an invalid metric, and an unavailable MLflow response. In each case the agent reports the failure rather than inventing a success.
 
 ## 7. Testing and limits
 

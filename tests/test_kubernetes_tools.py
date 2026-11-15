@@ -18,3 +18,9 @@ def test_log_request_for_unknown_pod_has_no_invented_logs():
     result = KubernetesTools().pod_logs("unknown")
     assert not result.ok
     assert result.data == {}
+
+
+def test_deployment_version_and_pod_events_are_available():
+    tool = KubernetesTools()
+    assert tool.deployment_status().data["deployment"]["image"] == "mlops-agent:0.1.0"
+    assert tool.pod_events("churn-inference-6cd9b8d94-pf7xj").data["events"][0]["reason"] == "Started"

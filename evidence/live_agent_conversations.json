@@ -1,0 +1,32 @@
+[
+  {
+    "question": "Which dataset version was used?",
+    "tools_used": ["dvc.get_dataset_version"],
+    "answer": "The live DVC tool returned customer_churn version v1.0, its DVC pointer, and the current Git revision.",
+    "evidence": ["data/provenance.json", "git rev-parse HEAD", "dvc status"]
+  },
+  {
+    "question": "Compare the last five MLflow runs and recommend the best candidate based on F1 score.",
+    "tools_used": ["mlflow.compare_runs"],
+    "answer": "MlflowClient compared five completed logistic-regression runs and selected run 6081a1785b224d8c9be3c7d00414e072 at F1 0.9787. Promotion still requires validation, fairness, latency, and approval review.",
+    "evidence": ["MlflowClient.search_runs"]
+  },
+  {
+    "question": "What happened in the training pipeline?",
+    "tools_used": ["airflow.dag_runs"],
+    "answer": "The authenticated Airflow API returned a successful manual run with validation, preprocessing, training, MLflow logging, and quality-gate task instances in success.",
+    "evidence": ["Airflow REST GET dagRuns"]
+  },
+  {
+    "question": "Is the prediction API available and which image is deployed?",
+    "tools_used": ["kubernetes.deployment_status", "kubernetes.pod_events"],
+    "answer": "Kubernetes returned churn-inference at 2/2 ready replicas using image mlops-agent:0.1.0. The queried running Pod had no warning events.",
+    "evidence": ["Kubernetes AppsV1Api.read_namespaced_deployment_status", "Kubernetes CoreV1Api.list_namespaced_event"]
+  },
+  {
+    "question": "Find the best recent model, identify the dataset version, check deployment status, and explain whether retraining is necessary.",
+    "tools_used": ["mlflow.best_run", "dvc.get_dataset_version", "kubernetes.deployment_status", "airflow.dag_runs"],
+    "answer": "The integrated live request selected logistic regression at F1 0.9787, found customer_churn v1.0, reported churn-inference healthy at 2/2 replicas, and found the latest Airflow workflow successful. It did not recommend automatic retraining because no degradation, freshness-policy breach, or failed quality gate was present.",
+    "evidence": ["MlflowClient.search_runs", "data/provenance.json", "Kubernetes AppsV1Api.read_namespaced_deployment_status", "Airflow REST GET dagRuns"]
+  }
+]

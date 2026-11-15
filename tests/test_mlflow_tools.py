@@ -14,6 +14,13 @@ def test_registry_information_is_available():
     assert result.data["stage"] == "Staging"
 
 
+def test_recent_runs_can_be_compared_by_metric():
+    result = MLflowTools().compare_runs("f1")
+    assert result.ok
+    assert len(result.data["runs"]) >= 2
+    assert result.data["recommended_run"]["f1"] == 0.901
+
+
 def test_invalid_metric_does_not_produce_a_made_up_best_run():
     result = MLflowTools().best_run("does_not_exist")
     assert not result.ok

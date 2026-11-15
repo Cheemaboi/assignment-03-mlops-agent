@@ -38,12 +38,14 @@ class KubernetesTools:
                 if name != deployment["name"]:
                     raise ValueError(f"Deployment '{name}' was not found in the approved namespace")
                 healthy = deployment["ready_replicas"] >= deployment["desired_replicas"]
-                return {"deployment": deployment, "healthy": healthy, "namespace": self.namespace}, ["data/demo_state.json:kubernetes.deployment"]
+                return {"deployment": {**deployment, "image": "mlops-agent:0.1.0"}, "healthy": healthy, "namespace": self.namespace}, ["data/demo_state.json:kubernetes.deployment"]
             apps, _ = self._clients()
             item = apps.read_namespaced_deployment_status(name, self.namespace)
             desired = item.spec.replicas or 0
             ready = item.status.ready_replicas or 0
-            deployment = {"name": name, "desired_replicas": desired, "ready_replicas": ready}
+            containers = item.spec.template.spec.containers or []
+            image = containers[0].image if containers else "unknown"
+            deployment = {"name": name, "desired_replicas": desired, "ready_replicas": ready, "image": image}
             return {"deployment": deployment, "healthy": ready >= desired, "namespace": self.namespace}, ["Kubernetes AppsV1Api.read_namespaced_deployment_status"]
 
         return result("kubernetes.deployment_status", action)
@@ -70,6 +72,20 @@ class KubernetesTools:
             return {"pod": pod_name, "logs": core.read_namespaced_pod_log(pod_name, self.namespace, tail_lines=100)}, ["Kubernetes CoreV1Api.read_namespaced_pod_log"]
 
         return result("kubernetes.pod_logs", action)
+
+    def pod_events(self, pod_name: str):
+        """Return recent namespace-scoped events for diagnosis without mutating the cluster."""
+        def action():
+            if demo_mode():
+                pods = load_demo_state()["kubernetes"]["pods"]
+                if not any(p["name"] == pod_name for p in pods):
+                    raise ValueError("Pod was not found in the approved namespace")
+                return {"pod": pod_name, "events": [{"type": "Normal", "reason": "Started", "message": "Container started successfully"}]}, ["data/demo_state.json:kubernetes.pods"]
+            _, core = self._clients()
+            events = core.list_namespaced_event(self.namespace, field_selector=f"involvedObject.name={pod_name}").items
+            return {"pod": pod_name, "events": [{"type": event.type, "reason": event.reason, "message": event.message} for event in events[-20:]]}, ["Kubernetes CoreV1Api.list_namespaced_event"]
+
+        return result("kubernetes.pod_events", action)
 
     def restart_deployment(self, name: str, confirmed: bool):
         def action():

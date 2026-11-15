@@ -66,6 +66,26 @@ class MLflowTools:
 
         return result("mlflow.get_run", action)
 
+    def compare_runs(self, metric: str = "f1", limit: int = 5):
+        """Rank recent completed runs without implying that ranking is promotion."""
+        def action():
+            runs_result = self.list_runs(limit)
+            if not runs_result.ok:
+                raise RuntimeError(runs_result.error or "MLflow search failed")
+            ranked = []
+            for run in runs_result.data["runs"]:
+                value = run.get(metric, run.get("metrics", {}).get(metric))
+                if run.get("status") == "FINISHED" and value is not None:
+                    ranked.append({"run_id": run["run_id"], "name": run.get("name"), metric: value})
+            if len(ranked) < 2:
+                raise ValueError(f"At least two finished runs with metric '{metric}' are required for comparison")
+            ranked.sort(key=lambda run: run[metric], reverse=True)
+            return {"metric": metric, "runs": ranked, "recommended_run": ranked[0]}, [
+                "data/demo_state.json:mlflow.runs" if demo_mode() else "MlflowClient.search_runs"
+            ]
+
+        return result("mlflow.compare_runs", action)
+
     def best_run(self, metric: str = "f1"):
         def action():
             if demo_mode():
